@@ -53,10 +53,11 @@ def get_random_frequency():
     return (random.random() * 400) + 200
 
 
-def append_random_frequency(frequencies):
-    frequencies.append({
-            'type': 'sine',
-            'frequency': get_random_frequency()
+def append_random_frequencies(frequencies, count):
+    for _ in range(count):
+        frequencies.append({
+                'type': 'sine',
+                'frequency': get_random_frequency()
         })
 
 
@@ -64,22 +65,21 @@ def get_random_frequency_array(freq_count):
     assert freq_count > 0
 
     frequencies = []
-    for _ in range(0, freq_count):
-        append_random_frequency(frequencies)
+    append_random_frequencies(frequencies, freq_count)
 
     return frequencies
 
 
-def remove_frequency(frequencies):
-    frequencies.pop()
+def remove_frequencies(frequencies, count):
+    for _ in range(count):
+        frequencies.pop()
 
 
-target_frequencies = get_random_frequency_array(3)
-# print(target_frequencies)
+target_frequencies = get_random_frequency_array(random.randint(1, 10))
+print('Target count: {}'.format(len(target_frequencies)))
 
-guess_frequencies = get_random_frequency_array(6)
-# print(guess_frequencies)
-
+guess_frequencies = get_random_frequency_array(random.randint(1, 10))
+print('Initial guess count: {}'.format(len(guess_frequencies)))
 
 best_score = None
 max_rounds = 10
@@ -111,9 +111,12 @@ while current_round <= max_rounds:
     print(score)
 
     if score > 0:
-        append_random_frequency(guess_frequencies)
+        append_random_frequencies(guess_frequencies, score)
     elif score < 0 and len(guess_frequencies) > 1:
-        remove_frequency(guess_frequencies)
+        if len(guess_frequencies) + score > 0:
+            remove_frequencies(guess_frequencies, -score)
+        else:
+            remove_frequencies(guess_frequencies, 1)
     else:
         break
 
