@@ -41,17 +41,12 @@ def get_bucketed_signal(data, number_of_windows):
         noverlap=0
     )
 
-    # TODO need a better way to prevent 1 frequency from showing up in 2 consecutive buckets
-    #   e.g. 423.6 in both 423 and 424
-    #   try mapping sxx to log scale so the "middle" sxx values are lower and fall into bucket 0
-
-    # quantize Sxx into n number of bins of equal size between 0 and the max value
+    # Find relative extrema in spectrogram energy. Identify frequencies as extrema above a minimum threshold
     max_sxx = np.amax(sxx)
-    sxx_broadcasted = sxx / max_sxx
+    rel_max_index_arrays = signal.argrelextrema(sxx, np.greater)
+    rel_max_indices_filtered = np.array([i for i in rel_max_index_arrays[0] if (sxx[i] * 1.0) / max_sxx > 0.01])
 
-    # use ceiling to get Sxx values between 0 and num_Sxx_buckets - 1
-    num_sxx_buckets = 2
-    return np.ceil(sxx_broadcasted * num_sxx_buckets) - 1
+    return np.array([np.array([1 if i in rel_max_indices_filtered else 0]) for i in range(len(sxx))])
 
 
 def get_random_frequency():
