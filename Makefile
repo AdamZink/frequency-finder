@@ -1,7 +1,7 @@
-.PHONY: app test run
+.PHONY: app_count run_count
 
-app:
-	docker build -f Dockerfile -t frequency-finder:dev .
+app_count:
+	docker build -f Dockerfile -t frequency-finder:dev-count .
 
-run:
-	docker run --rm -it --name frequency-finder frequency-finder:dev
+run_count:
+	docker run --rm -it --name frequency-finder frequency-finder:dev-count
