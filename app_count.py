@@ -16,7 +16,6 @@ print('Target count: {}'.format(len(target_frequencies)))
 guess_frequencies = get_random_frequency_array(random.randint(1, 10))
 print('Initial guess count: {}'.format(len(guess_frequencies)))
 
-best_score = None
 max_rounds = 10
 current_round = 1
 

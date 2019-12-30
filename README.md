@@ -1,5 +1,16 @@
 # frequency-finder
-An algorithm to find target frequencies in an audio signal
+
+Find target frequencies in an audio signal
+
+### Applications
+
+Iteratively find the correct quantity of frequencies by comparing to known target:
+
+```python app_count.py```
+
+Iteratively find the correct frequency values by comparing to known target:
+
+```python app_frequency_values.py```
 
 ### Tests
 

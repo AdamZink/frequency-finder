@@ -41,6 +41,8 @@ def get_bucketed_signal(data, number_of_windows):
     # Find relative extrema in spectrogram energy. Identify frequencies as extrema above a minimum threshold
     max_sxx = np.amax(sxx)
     rel_max_index_arrays = signal.argrelextrema(sxx, np.greater)
+    # TODO fix bug causing:
+    #  ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
     rel_max_indices_filtered = np.array([i for i in rel_max_index_arrays[0] if (sxx[i] * 1.0) / max_sxx > 0.01])
 
     return np.array([np.array([1 if i in rel_max_indices_filtered else 0]) for i in range(len(sxx))])
