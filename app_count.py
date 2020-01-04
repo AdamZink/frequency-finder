@@ -31,14 +31,14 @@ def debug_bucketed(bucketed):
     print('<<<\n')
 
 
-target_signal = get_signal_from_obj(target_frequencies)
-target_bucketed = get_bucketed_signal(target_signal, NUM_WINDOWS)
+target_signal = generate_signal_from_obj(target_frequencies)
+target_bucketed = generate_bucketed_signal(target_signal, NUM_WINDOWS)
 debug_bucketed(target_bucketed)
 
 while current_round <= max_rounds:
 
-    guess_signal = get_signal_from_obj(guess_frequencies)
-    guess_bucketed = get_bucketed_signal(guess_signal, NUM_WINDOWS)
+    guess_signal = generate_signal_from_obj(guess_frequencies)
+    guess_bucketed = generate_bucketed_signal(guess_signal, NUM_WINDOWS)
     debug_bucketed(guess_bucketed)
 
     score = get_frequency_count_score(target_bucketed, guess_bucketed)
