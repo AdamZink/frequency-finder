@@ -13,6 +13,9 @@ class Candidate:
     def set_frequencies(self, frequencies):
         self.frequencies = frequencies
 
+    def get_frequencies(self):
+        return self.frequencies
+
     def set_wav_signal(self, wav_signal):
         self.wav_signal = wav_signal
 
@@ -24,9 +27,6 @@ class Candidate:
 
     def get_bucketed_signal(self):
         return self.bucketed_signal
-
-    def get_frequencies(self):
-        return self.frequencies
 
     def set_too_high_score(self, too_high_score):
         self.too_high_score = too_high_score
@@ -42,7 +42,7 @@ class Candidate:
 
     def get_formatted(self):
         return '\nFrequencies: {}\nToo high score: {}\nToo low score: {}'.format(
-            json.dumps(self.frequencies, indent=2),
+            json.dumps(sorted(self.frequencies, key=lambda x: x['frequency']), indent=2),
             self.too_high_score,
             self.too_low_score
         )
