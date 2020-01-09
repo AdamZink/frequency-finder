@@ -41,8 +41,9 @@ class Candidate:
         return self.too_low_score
 
     def get_formatted(self):
-        return '\nFrequencies: {}\nToo high score: {}\nToo low score: {}'.format(
+        return '\nFrequencies: {}\nToo high score: {}\nToo low score: {}\nComposite score: {}'.format(
             json.dumps(sorted(self.frequencies, key=lambda x: x['frequency']), indent=2),
             self.too_high_score,
-            self.too_low_score
+            self.too_low_score,
+            None if self.too_high_score is None or self.too_low_score is None else self.too_high_score + self.too_low_score
         )

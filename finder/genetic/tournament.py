@@ -1,5 +1,4 @@
 import random
-import copy
 
 
 def get_composite_score(candidate):
@@ -20,15 +19,14 @@ def get_candidate_weights(candidates):
     return [s / composite_score_sum for s in inverted_composite_scores]
 
 
-def get_round_winner_indices(candidates, winners_per_round):
+def get_round_winner_indices(population, candidate_indices, winners_per_round):
     assert winners_per_round > 0
-    assert winners_per_round <= len(candidates)
+    assert winners_per_round <= len(candidate_indices)
 
     winner_indices = []
-    candidate_indices = [i for i in range(len(candidates))]
 
     while len(winner_indices) < winners_per_round:
-        candidate_weights = get_candidate_weights([candidates[i] for i in candidate_indices])
+        candidate_weights = get_candidate_weights([population[i] for i in candidate_indices])
 
         num = random.random()
         selected_index = None
@@ -48,13 +46,17 @@ def get_round_winner_indices(candidates, winners_per_round):
 
 
 # append parents which move on to next population / delete from current population
-def select_tournament_winners(population, next_population, winners_per_round):
-    while len(next_population) < len(population):
-        random.shuffle(population)
+def select_tournament_winners(population, remaining_indices_for_tournament, non_elite_surviving_indices, winners_per_round, num_elite):
+    tournament_pool_indices = [i for i in remaining_indices_for_tournament]
 
-        winner_indices = get_round_winner_indices(population[0:3], winners_per_round)
+    while num_elite + len(non_elite_surviving_indices) < len(tournament_pool_indices):
+        random.shuffle(tournament_pool_indices)
+
+        # TODO fix for partial number of winners remaining (e.g. only 1 spot left because of elitism)
+
+        winner_indices = get_round_winner_indices(population, tournament_pool_indices[0:3], winners_per_round)
 
         for i in winner_indices:
-            next_population.append(copy.deepcopy(population[i]))
-        for i in winner_indices:
-            del population[i]
+            non_elite_surviving_indices.append(i)
+
+        tournament_pool_indices = [i for i in remaining_indices_for_tournament if i not in non_elite_surviving_indices]

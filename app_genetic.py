@@ -4,22 +4,22 @@ import json
 from finder.fitness.frequency.values import *
 import copy
 from finder.genetic.tournament import *
+from finder.genetic.elite import *
 
+
+num_frequencies = 4
 
 population_size = 8
-winners_per_round = 2
-num_frequencies = 2
+num_elite = 1
+winners_per_round = 1
+
+max_rounds = 100
 
 target_frequencies = get_random_frequency_array(num_frequencies)
 print('Target frequencies:\n{}'.format(json.dumps(target_frequencies, indent=2)))
 
 population = get_random_population(population_size, num_frequencies)
 
-print('\nInitial candidates:')
-for c in population:
-    print(c.get_formatted())
-
-max_rounds = 100
 current_round = 1
 
 NUM_WINDOWS = 1
@@ -62,108 +62,142 @@ debug_bucketed(target_bucketed)
 
 while True:
     lowest_score = None
+    best_index = None
 
     # TODO Note: it's taking a long time to calculate all the signals and scores for 64 candidates
     # print("before calculation")
 
-    for c in population:
-        cascade_update = False
+    for i in range(len(population)):
+        population[i].set_wav_signal(generate_signal_from_obj(population[i].get_frequencies()))
+        population[i].set_bucketed_signal(generate_bucketed_signal(population[i].get_wav_signal(), NUM_WINDOWS))
 
-        if c.get_wav_signal() is None:
-            c.set_wav_signal(generate_signal_from_obj(c.get_frequencies()))
-            cascade_update = True
+        too_low_score, too_high_score = get_frequency_value_scores(target_bucketed, population[i].get_bucketed_signal())
+        population[i].set_too_low_score(too_low_score)
+        population[i].set_too_high_score(too_high_score)
 
-        if c.get_bucketed_signal() is None or cascade_update is True:
-            c.set_bucketed_signal(generate_bucketed_signal(c.get_wav_signal(), NUM_WINDOWS))
+        combined_score = population[i].get_too_low_score() + population[i].get_too_high_score()
 
-        too_low_score, too_high_score = get_frequency_value_scores(target_bucketed, c.get_bucketed_signal())
-        c.set_too_low_score(too_low_score)
-        c.set_too_high_score(too_high_score)
-
-        combined_score = c.get_too_low_score() + c.get_too_high_score()
         if lowest_score is None or combined_score < lowest_score:
+            best_index = i
             lowest_score = combined_score
 
     # print("after calculation")
 
-    if current_round > max_rounds or lowest_score == 0:
+    if current_round > max_rounds or lowest_score < 3:
         break
 
-    print_best_candidate(population)
+    print("\nBest candidate in round {}:\n{}".format(current_round, population[best_index].get_formatted()))
 
-    # TODO use tournament selection on the population
-    #  e.g. rounds of random 4, pick best 2, continue until half of population is chosen for crossover
-    surviving_population = []
-    select_tournament_winners(population, surviving_population, winners_per_round)
+    elite_indices = get_elite_indices(population, num_elite)
 
-    # TODO crossover
+    remaining_indices_for_tournament = [i for i in range(len(population)) if i not in elite_indices]
+
+    non_elite_surviving_indices = []
+
+    select_tournament_winners(
+        population,
+        remaining_indices_for_tournament,
+        non_elite_surviving_indices,
+        winners_per_round,
+        num_elite
+    )
+
+    all_surviving_indices = elite_indices + non_elite_surviving_indices
+
     # randomly pair the next generation
-    random.shuffle(surviving_population)
-    parent_candidate_pairs = zip(surviving_population[0::2], surviving_population[1::2])
+    random.shuffle(all_surviving_indices)
+    surviving_index_pairs = zip(all_surviving_indices[0::2], all_surviving_indices[1::2])
 
-    new_population = []
+    children = []
 
-    for p1, p2 in parent_candidate_pairs:
-        new_population.append(p1)
-        new_population.append(p2)
+    for i1, i2 in surviving_index_pairs:
+        c1 = copy.deepcopy(population[i1])
+        c2 = copy.deepcopy(population[i2])
 
-    # Mutation
+        f1 = sorted(c1.get_frequencies(), key=lambda f: f['frequency'])
+        f2 = sorted(c2.get_frequencies(), key=lambda f: f['frequency'])
+
+        i_crossover = random.randint(0, num_frequencies)
+
+        c1.set_frequencies(
+            f1[0:i_crossover] + f2[i_crossover:num_frequencies]
+        )
+
+        c2.set_frequencies(
+            f2[0:i_crossover] + f1[i_crossover:num_frequencies]
+        )
+
+        children.append(c1)
+        children.append(c2)
+
+    # Mutation of non-elite parents
     # Incremental without replacement - add or subtract from frequencies, but not both in the same round
-    # Works somewhat better for 3 or 4 frequencies, but still bounces around and does not reliably converge
-    # TODO Next step: use the value fitness in a genetic algorithm
-    for c in surviving_population:
-        guess_frequencies = c.get_frequencies()
+    for i in non_elite_surviving_indices:
+        c = population[i]
+
+        c_frequencies = c.get_frequencies()
 
         if c.get_too_high_score() == 0:
-            add_qty = len(guess_frequencies)
+            add_qty = len(c_frequencies)
             subtract_qty = 0
         elif c.get_too_low_score() == 0:
             add_qty = 0
-            subtract_qty = len(guess_frequencies)
-        elif len(guess_frequencies) % 2 == 0:
-            add_qty = int(len(guess_frequencies) / 2)
-            subtract_qty = int(len(guess_frequencies) / 2)
+            subtract_qty = len(c_frequencies)
+        elif len(c_frequencies) % 2 == 0:
+            add_qty = int(len(c_frequencies) / 2)
+            subtract_qty = int(len(c_frequencies) / 2)
         else:
-            add_qty = int((len(guess_frequencies) / 2) + random.random())
-            subtract_qty = len(guess_frequencies) - add_qty
+            add_qty = int((len(c_frequencies) / 2) + random.random())
+            subtract_qty = len(c_frequencies) - add_qty
 
         new_guess_frequencies = []
 
         too_high_adjustments = [p * c.get_too_high_score() for p in get_normalized_probability_list(subtract_qty)]
         for value in too_high_adjustments:
-            eligible_guess_indices = [i for i in range(len(guess_frequencies)) if
-                                      guess_frequencies[i]['frequency'] - value > 0]
+            eligible_guess_indices = [i for i in range(len(c_frequencies)) if
+                                      c_frequencies[i]['frequency'] - value > 0]
 
             if len(eligible_guess_indices) > 0:
                 subtract_index = random.randint(0, len(eligible_guess_indices) - 1)
                 new_guess_frequencies.append({
                     'type': 'sine',
-                    'frequency': guess_frequencies[eligible_guess_indices[subtract_index]]['frequency'] - value
+                    'frequency': c_frequencies[eligible_guess_indices[subtract_index]]['frequency'] - value
                 })
-                del guess_frequencies[eligible_guess_indices[subtract_index]]
+                del c_frequencies[eligible_guess_indices[subtract_index]]
             else:
-                keep_index = random.randint(0, len(guess_frequencies) - 1)
+                keep_index = random.randint(0, len(c_frequencies) - 1)
                 new_guess_frequencies.append({
                     'type': 'sine',
-                    'frequency': guess_frequencies[keep_index]['frequency']
+                    'frequency': c_frequencies[keep_index]['frequency']
                 })
-                del guess_frequencies[keep_index]
+                del c_frequencies[keep_index]
 
         too_low_adjustments = [p * c.get_too_low_score() for p in get_normalized_probability_list(add_qty)]
         for value in too_low_adjustments:
-            add_index = random.randint(0, len(guess_frequencies) - 1)
+            add_index = random.randint(0, len(c_frequencies) - 1)
             new_guess_frequencies.append({
                 'type': 'sine',
-                'frequency': guess_frequencies[add_index]['frequency'] + value
+                'frequency': c_frequencies[add_index]['frequency'] + value
             })
-            del guess_frequencies[add_index]
+            del c_frequencies[add_index]
 
         c.set_frequencies(new_guess_frequencies)
         c.set_wav_signal(None)
         c.set_too_high_score(None)
         c.set_too_low_score(None)
 
-    population = copy.deepcopy(surviving_population + new_population)
+    new_population = []
+
+    for i in elite_indices:
+        new_population.append(copy.deepcopy(population[i]))
+
+    for i in non_elite_surviving_indices:
+        new_population.append(copy.deepcopy(population[i]))
+
+    for c in children:
+        new_population.append(c)
+
+    population = new_population
 
     current_round += 1
 

@@ -12,8 +12,12 @@ Iteratively find the correct frequency values by comparing to known target:
 
 ```python app_frequency_values.py```
 
+Use a genetic algorithm to find the correct frequency values by comparing to known target:
+
+```python app_genetic.py```
+
 ### Tests
 
 ```cd frequency-finder```
 
-```python -m unittest discover```
+```python -m unittest```
