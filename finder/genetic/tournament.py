@@ -47,16 +47,27 @@ def get_round_winner_indices(population, candidate_indices, winners_per_round):
 
 # append parents which move on to next population / delete from current population
 def select_tournament_winners(population, remaining_indices_for_tournament, non_elite_surviving_indices, winners_per_round, num_elite):
+    assert len(population) % 2 == 0
+    assert num_elite <= (len(population) / 2)
+
     tournament_pool_indices = [i for i in remaining_indices_for_tournament]
 
-    while num_elite + len(non_elite_surviving_indices) < len(tournament_pool_indices):
+    current_survivor_qty = num_elite + len(non_elite_surviving_indices)
+
+    while current_survivor_qty < (len(population) / 2):
         random.shuffle(tournament_pool_indices)
 
         # TODO fix for partial number of winners remaining (e.g. only 1 spot left because of elitism)
 
-        winner_indices = get_round_winner_indices(population, tournament_pool_indices[0:3], winners_per_round)
+        winner_indices = get_round_winner_indices(
+            population,
+            tournament_pool_indices[0:3],
+            winners_per_round if current_survivor_qty + winners_per_round <= (len(population) / 2) else (len(population) / 2) - current_survivor_qty
+        )
 
         for i in winner_indices:
             non_elite_surviving_indices.append(i)
+
+        current_survivor_qty = num_elite + len(non_elite_surviving_indices)
 
         tournament_pool_indices = [i for i in remaining_indices_for_tournament if i not in non_elite_surviving_indices]

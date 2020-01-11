@@ -11,7 +11,7 @@ num_frequencies = 4
 
 population_size = 8
 num_elite = 1
-winners_per_round = 1
+winners_per_round = 2
 
 max_rounds = 100
 

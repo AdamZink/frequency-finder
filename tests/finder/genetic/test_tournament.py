@@ -46,3 +46,26 @@ class TestTournament(unittest.TestCase):
     def test_get_round_winner_indices_4(self):
         self.check_get_round_winner_indices(get_candidates(), get_candidate_indices(), 4)
 
+    def test_select_tournament_winners_zero_elite(self):
+        non_elite_surviving_indices = []
+        select_tournament_winners(
+            get_candidates(),
+            get_candidate_indices(),
+            non_elite_surviving_indices,
+            2,
+            0
+        )
+        # should be o2 non-elite because 0 elite + 2 non-elite fills the total of 2 surviving parents
+        self.assertEqual(2, len(non_elite_surviving_indices))
+
+    def test_select_tournament_winners_one_elite(self):
+        non_elite_surviving_indices = []
+        select_tournament_winners(
+            get_candidates(),
+            get_candidate_indices(),
+            non_elite_surviving_indices,
+            2,
+            1
+        )
+        # should be only 1 non-elite because 1 elite + 1 non-elite fills the total of 2 surviving parents
+        self.assertEqual(1, len(non_elite_surviving_indices))
