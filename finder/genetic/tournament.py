@@ -57,8 +57,6 @@ def select_tournament_winners(population, remaining_indices_for_tournament, non_
     while current_survivor_qty < (len(population) / 2):
         random.shuffle(tournament_pool_indices)
 
-        # TODO fix for partial number of winners remaining (e.g. only 1 spot left because of elitism)
-
         winner_indices = get_round_winner_indices(
             population,
             tournament_pool_indices[0:3],
