@@ -12,20 +12,20 @@ def normalize_for_wav(data, max_amplitude):
     return np.int16(data / np.max(np.abs(data)) * (max_amplitude * (32767 - 100)))
 
 
-def get_signal_from_obj(frequency_obj, samples_per_second=44100, max_amplitude=0.1):
+def generate_signal_from_obj(frequency_obj, samples_per_second=44100, max_amplitude=0.1):
     data = np.zeros((samples_per_second,))
     for obj in frequency_obj:
         data += get_sine(obj['frequency'], samples_per_second, 1)
     return normalize_for_wav(data, max_amplitude)
 
 
-def get_bucketed_signal(data, number_of_windows):
+def generate_bucketed_signal(data, number_of_windows):
     fs = data.size
 
     window_length_in_samples = math.floor(fs / number_of_windows)
     # print('\nwindow length: ' + str(window_length_in_samples))
 
-    window_length_in_seconds = math.floor(number_of_windows / fs)
+    # window_length_in_seconds = math.floor(number_of_windows / fs)
     # print('\nwindow time (sec): ' + str(window_length_in_seconds))
 
     # frequency_resolution = fs / window_length_in_samples
