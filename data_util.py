@@ -23,11 +23,11 @@ def get_random_frequency_array(freq_count):
     return frequencies
 
 
-def get_random_population(qty, freq_count):
+def get_random_population(qty, freq_count, target, num_windows):
     population = []
     for _ in range(qty):
         candidate = Candidate()
-        candidate.set_frequencies(get_random_frequency_array(freq_count))
+        candidate.set_frequencies_and_calculate_scores(get_random_frequency_array(freq_count), target, num_windows)
         population.append(candidate)
 
     return population

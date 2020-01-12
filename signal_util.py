@@ -19,10 +19,10 @@ def generate_signal_from_obj(frequency_obj, samples_per_second=44100, max_amplit
     return normalize_for_wav(data, max_amplitude)
 
 
-def generate_bucketed_signal(data, number_of_windows):
+def generate_bucketed_signal(data, num_windows):
     fs = data.size
 
-    window_length_in_samples = math.floor(fs / number_of_windows)
+    window_length_in_samples = math.floor(fs / num_windows)
     # print('\nwindow length: ' + str(window_length_in_samples))
 
     # window_length_in_seconds = math.floor(number_of_windows / fs)
