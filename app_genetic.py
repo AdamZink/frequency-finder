@@ -104,12 +104,6 @@ while True:
             f2[0:i_crossover] + f1[i_crossover:num_frequencies], target, num_windows
         )
 
-        # TODO something broke the algorithm - it does not converge at the moment... the best score stays the same after 1st round
-
-        # print('Children:')
-        # print(c1.get_formatted())
-        # print(c2.get_formatted())
-
         children.append(c1)
         children.append(c2)
 
