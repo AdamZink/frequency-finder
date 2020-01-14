@@ -1,7 +1,5 @@
-from signal_util import *
 from data_util import *
 import json
-from finder.fitness.frequency.values import *
 import copy
 from finder.genetic.tournament import *
 from finder.genetic.elite import *
@@ -15,14 +13,9 @@ winners_per_round = 2
 
 max_rounds = 100
 
-target_frequencies = get_random_frequency_array(num_frequencies)
-print('Target frequencies:\n{}'.format(json.dumps(target_frequencies, indent=2)))
-
-population = get_random_population(population_size, num_frequencies)
-
 current_round = 1
 
-NUM_WINDOWS = 1
+num_windows = 1
 
 
 def print_best_candidate(population):
@@ -39,15 +32,6 @@ def print_best_candidate(population):
     print(best_candidate.get_formatted())
 
 
-def debug_bucketed(bucketed):
-    print('\nDebug output for bucketed data >>>')
-    print(bucketed.shape)
-    for i in range(bucketed.shape[0]):
-        if np.sum(bucketed[i]) > 0:
-            print("row index {}: {}".format(i, bucketed[i]))
-    print('<<<\n')
-
-
 def get_normalized_probability_list(qty):
     probability_list = []
     for _ in range(qty):
@@ -56,32 +40,24 @@ def get_normalized_probability_list(qty):
     return [p / sum_of_probabilities for p in probability_list]
 
 
-target_signal = generate_signal_from_obj(target_frequencies)
-target_bucketed = generate_bucketed_signal(target_signal, NUM_WINDOWS)
-debug_bucketed(target_bucketed)
+target = Candidate()
+target.set_frequencies_and_calculate_scores(get_random_frequency_array(num_frequencies), target, num_windows)
+print('Target frequencies:\n{}'.format(json.dumps(target.get_frequencies(), indent=2)))
+
+population = get_random_population(population_size, num_frequencies, target, num_windows)
+
+target.debug_bucketed()
 
 while True:
     lowest_score = None
     best_index = None
 
-    # TODO Note: it's taking a long time to calculate all the signals and scores for 64 candidates
-    # print("before calculation")
-
     for i in range(len(population)):
-        population[i].set_wav_signal(generate_signal_from_obj(population[i].get_frequencies()))
-        population[i].set_bucketed_signal(generate_bucketed_signal(population[i].get_wav_signal(), NUM_WINDOWS))
-
-        too_low_score, too_high_score = get_frequency_value_scores(target_bucketed, population[i].get_bucketed_signal())
-        population[i].set_too_low_score(too_low_score)
-        population[i].set_too_high_score(too_high_score)
-
         combined_score = population[i].get_too_low_score() + population[i].get_too_high_score()
 
         if lowest_score is None or combined_score < lowest_score:
             best_index = i
             lowest_score = combined_score
-
-    # print("after calculation")
 
     if current_round > max_rounds or lowest_score < 3:
         break
@@ -110,21 +86,22 @@ while True:
 
     children = []
 
+    # Create children and calculate their fitness scores
     for i1, i2 in surviving_index_pairs:
-        c1 = copy.deepcopy(population[i1])
-        c2 = copy.deepcopy(population[i2])
+        c1 = Candidate()
+        c2 = Candidate()
 
-        f1 = sorted(c1.get_frequencies(), key=lambda f: f['frequency'])
-        f2 = sorted(c2.get_frequencies(), key=lambda f: f['frequency'])
+        f1 = sorted(population[i1].get_frequencies(), key=lambda f: f['frequency'])
+        f2 = sorted(population[i2].get_frequencies(), key=lambda f: f['frequency'])
 
         i_crossover = random.randint(0, num_frequencies)
 
-        c1.set_frequencies(
-            f1[0:i_crossover] + f2[i_crossover:num_frequencies]
+        c1.set_frequencies_and_calculate_scores(
+            f1[0:i_crossover] + f2[i_crossover:num_frequencies], target, num_windows
         )
 
-        c2.set_frequencies(
-            f2[0:i_crossover] + f1[i_crossover:num_frequencies]
+        c2.set_frequencies_and_calculate_scores(
+            f2[0:i_crossover] + f1[i_crossover:num_frequencies], target, num_windows
         )
 
         children.append(c1)
@@ -181,10 +158,7 @@ while True:
             })
             del c_frequencies[add_index]
 
-        c.set_frequencies(new_guess_frequencies)
-        c.set_wav_signal(None)
-        c.set_too_high_score(None)
-        c.set_too_low_score(None)
+        c.set_frequencies_and_calculate_scores(new_guess_frequencies, target, num_windows)
 
     new_population = []
 
@@ -204,7 +178,7 @@ while True:
 print_best_candidate(population)
 
 print('\nTarget frequencies:\n{}'.format(
-    json.dumps(sorted(target_frequencies, key=lambda x: x['frequency']), indent=2))
+    json.dumps(sorted(target.get_frequencies(), key=lambda x: x['frequency']), indent=2))
 )
 
 print('done after {} rounds'.format(current_round - 1))
