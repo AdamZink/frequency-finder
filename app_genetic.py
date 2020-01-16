@@ -108,10 +108,8 @@ while True:
         children.append(c2)
 
     # Mutation of children
-    # Incremental without replacement - add or subtract from frequencies, but not both in the same round
     for c in children:
-        # TODO could mix in 2 types of mutation: calculated add qty/subtract qty with high rate (>= 0.9),
-        # TODO   and possibly completely random change of frequency values with low rate (<= 0.05) to explore space
+        # A) Incremental without replacement - add or subtract from frequencies, but not both in the same round
         if random.random() < 0.9:
             c_frequencies = c.get_frequencies()
 
@@ -159,7 +157,14 @@ while True:
                 })
                 del c_frequencies[add_index]
 
-            c.set_frequencies_and_calculate_scores(new_guess_frequencies, target, num_windows)
+            c.set_frequencies(new_guess_frequencies)
+
+        # B) Completely random mutations (with low probability)
+        for f in c.get_frequencies():
+            if random.random() < 0.01:
+                f['frequency'] = get_random_frequency()
+
+        c.calculate_scores(target, num_windows)
 
     new_population = []
 
