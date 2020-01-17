@@ -13,14 +13,20 @@ class Candidate:
         self.too_high_score = None
         self.too_low_score = None
 
-    def set_frequencies_and_calculate_scores(self, frequencies, target, num_windows):
+    def set_frequencies(self, frequencies):
         self.frequencies = frequencies
+
+    def calculate_scores(self, target, num_windows):
         self.wav_signal = generate_signal_from_obj(self.frequencies)
         self.bucketed_signal = generate_bucketed_signal(self.wav_signal, num_windows)
         self.too_low_score, self.too_high_score = get_frequency_value_scores(
             target.get_bucketed_signal(),
             self.bucketed_signal
         )
+
+    def set_frequencies_and_calculate_scores(self, frequencies, target, num_windows):
+        self.set_frequencies(frequencies)
+        self.calculate_scores(target, num_windows)
 
     def get_frequencies(self):
         return self.frequencies

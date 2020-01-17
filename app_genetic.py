@@ -107,58 +107,64 @@ while True:
         children.append(c1)
         children.append(c2)
 
-    # Mutation of non-elite parents
-    # Incremental without replacement - add or subtract from frequencies, but not both in the same round
-    for i in non_elite_surviving_indices:
-        c = population[i]
+    # Mutation of children
+    for c in children:
+        # A) Incremental without replacement - add or subtract from frequencies, but not both in the same round
+        if random.random() < 0.9:
+            c_frequencies = c.get_frequencies()
 
-        c_frequencies = c.get_frequencies()
-
-        if c.get_too_high_score() == 0:
-            add_qty = len(c_frequencies)
-            subtract_qty = 0
-        elif c.get_too_low_score() == 0:
-            add_qty = 0
-            subtract_qty = len(c_frequencies)
-        elif len(c_frequencies) % 2 == 0:
-            add_qty = int(len(c_frequencies) / 2)
-            subtract_qty = int(len(c_frequencies) / 2)
-        else:
-            add_qty = int((len(c_frequencies) / 2) + random.random())
-            subtract_qty = len(c_frequencies) - add_qty
-
-        new_guess_frequencies = []
-
-        too_high_adjustments = [p * c.get_too_high_score() for p in get_normalized_probability_list(subtract_qty)]
-        for value in too_high_adjustments:
-            eligible_guess_indices = [i for i in range(len(c_frequencies)) if
-                                      c_frequencies[i]['frequency'] - value > 0]
-
-            if len(eligible_guess_indices) > 0:
-                subtract_index = random.randint(0, len(eligible_guess_indices) - 1)
-                new_guess_frequencies.append({
-                    'type': 'sine',
-                    'frequency': c_frequencies[eligible_guess_indices[subtract_index]]['frequency'] - value
-                })
-                del c_frequencies[eligible_guess_indices[subtract_index]]
+            if c.get_too_high_score() == 0:
+                add_qty = len(c_frequencies)
+                subtract_qty = 0
+            elif c.get_too_low_score() == 0:
+                add_qty = 0
+                subtract_qty = len(c_frequencies)
+            elif len(c_frequencies) % 2 == 0:
+                add_qty = int(len(c_frequencies) / 2)
+                subtract_qty = int(len(c_frequencies) / 2)
             else:
-                keep_index = random.randint(0, len(c_frequencies) - 1)
+                add_qty = int((len(c_frequencies) / 2) + random.random())
+                subtract_qty = len(c_frequencies) - add_qty
+
+            new_guess_frequencies = []
+
+            too_high_adjustments = [p * c.get_too_high_score() for p in get_normalized_probability_list(subtract_qty)]
+            for value in too_high_adjustments:
+                eligible_guess_indices = [i for i in range(len(c_frequencies)) if
+                                          c_frequencies[i]['frequency'] - value > 0]
+
+                if len(eligible_guess_indices) > 0:
+                    subtract_index = random.randint(0, len(eligible_guess_indices) - 1)
+                    new_guess_frequencies.append({
+                        'type': 'sine',
+                        'frequency': c_frequencies[eligible_guess_indices[subtract_index]]['frequency'] - value
+                    })
+                    del c_frequencies[eligible_guess_indices[subtract_index]]
+                else:
+                    keep_index = random.randint(0, len(c_frequencies) - 1)
+                    new_guess_frequencies.append({
+                        'type': 'sine',
+                        'frequency': c_frequencies[keep_index]['frequency']
+                    })
+                    del c_frequencies[keep_index]
+
+            too_low_adjustments = [p * c.get_too_low_score() for p in get_normalized_probability_list(add_qty)]
+            for value in too_low_adjustments:
+                add_index = random.randint(0, len(c_frequencies) - 1)
                 new_guess_frequencies.append({
                     'type': 'sine',
-                    'frequency': c_frequencies[keep_index]['frequency']
+                    'frequency': c_frequencies[add_index]['frequency'] + value
                 })
-                del c_frequencies[keep_index]
+                del c_frequencies[add_index]
 
-        too_low_adjustments = [p * c.get_too_low_score() for p in get_normalized_probability_list(add_qty)]
-        for value in too_low_adjustments:
-            add_index = random.randint(0, len(c_frequencies) - 1)
-            new_guess_frequencies.append({
-                'type': 'sine',
-                'frequency': c_frequencies[add_index]['frequency'] + value
-            })
-            del c_frequencies[add_index]
+            c.set_frequencies(new_guess_frequencies)
 
-        c.set_frequencies_and_calculate_scores(new_guess_frequencies, target, num_windows)
+        # B) Completely random mutations (with low probability)
+        for f in c.get_frequencies():
+            if random.random() < 0.01:
+                f['frequency'] = get_random_frequency()
+
+        c.calculate_scores(target, num_windows)
 
     new_population = []
 
