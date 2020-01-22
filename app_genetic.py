@@ -5,7 +5,8 @@ from finder.genetic.tournament import *
 from finder.genetic.elite import *
 
 
-num_frequencies = 4
+min_starting_frequencies = 3
+max_starting_frequencies = 6
 
 population_size = 8
 num_elite = 1
@@ -23,7 +24,7 @@ def print_best_candidate(population):
     best_candidate = None
 
     for c in population:
-        c_score = c.get_too_high_score() + c.get_too_low_score()
+        c_score = c.get_composite_score()
         if best_score is None or c_score < best_score:
             best_score = c_score
             best_candidate = c
@@ -40,11 +41,20 @@ def get_normalized_probability_list(qty):
     return [p / sum_of_probabilities for p in probability_list]
 
 
-target = Candidate()
-target.set_frequencies_and_calculate_scores(get_random_frequency_array(num_frequencies), target, num_windows)
+target = get_random_target(
+    min_starting_frequencies,
+    max_starting_frequencies,
+    num_windows
+)
 print('Target frequencies:\n{}'.format(json.dumps(target.get_frequencies(), indent=2)))
 
-population = get_random_population(population_size, num_frequencies, target, num_windows)
+population = get_random_population(
+    population_size,
+    min_starting_frequencies,
+    max_starting_frequencies,
+    target,
+    num_windows
+)
 
 target.debug_bucketed()
 
@@ -53,7 +63,8 @@ while True:
     best_index = None
 
     for i in range(len(population)):
-        combined_score = population[i].get_too_low_score() + population[i].get_too_high_score()
+        combined_score = population[i].get_composite_score()
+        print('i={}, combined_score={}'.format(i, combined_score))
 
         if lowest_score is None or combined_score < lowest_score:
             best_index = i
@@ -91,25 +102,52 @@ while True:
         c1 = Candidate()
         c2 = Candidate()
 
-        f1 = sorted(population[i1].get_frequencies(), key=lambda f: f['frequency'])
-        f2 = sorted(population[i2].get_frequencies(), key=lambda f: f['frequency'])
+        f1 = []
+        f2 = []
 
-        i_crossover = random.randint(0, num_frequencies)
+        parent_frequencies = population[i1].get_frequencies() + population[i2].get_frequencies()
+        min_parent_freq = min([f['frequency'] for f in parent_frequencies])
+        max_parent_freq = max([f['frequency'] for f in parent_frequencies])
 
-        c1.set_frequencies_and_calculate_scores(
-            f1[0:i_crossover] + f2[i_crossover:num_frequencies], target, num_windows
-        )
+        min_crossover_freq = min_parent_freq / 1.5 if min_parent_freq / 1.5 > 1.0 else 1.0
+        max_crossover_freq = max_parent_freq * 1.5 if max_parent_freq * 1.5 < 20000.0 else 20000.0
 
-        c2.set_frequencies_and_calculate_scores(
-            f2[0:i_crossover] + f1[i_crossover:num_frequencies], target, num_windows
-        )
+        crossover_frequency = get_random_frequency(min_crossover_freq, max_crossover_freq)
+
+        for f in population[i1].get_frequencies():
+            if f['frequency'] < crossover_frequency:
+                f1.append(f)
+            else:
+                f2.append(f)
+
+        for f in population[i2].get_frequencies():
+            if f['frequency'] < crossover_frequency:
+                f2.append(f)
+            else:
+                f1.append(f)
+
+        c1.set_frequencies_and_calculate_scores(f1, target, num_windows)
+        c2.set_frequencies_and_calculate_scores(f2, target, num_windows)
 
         children.append(c1)
         children.append(c2)
 
     # Mutation of children
     for c in children:
-        # A) Incremental without replacement - add or subtract from frequencies, but not both in the same round
+        # Adjust the number of frequencies
+        if c.frequency_count_score > 0 and random.random() < 0.25:
+            append_random_frequencies(
+                c.frequencies,
+                c.frequency_count_score
+            )
+        elif c.frequency_count_score < 0 and random.random() < 0.25:
+            random.shuffle(c.frequencies)
+            remove_frequencies(
+                c.frequencies,
+                -c.frequency_count_score if len(c.frequencies) > -c.frequency_count_score else len(c.frequencies) - 1
+            )
+
+        # Either add or subtract from each frequency value (with high probability)
         if random.random() < 0.9:
             c_frequencies = c.get_frequencies()
 
@@ -159,10 +197,10 @@ while True:
 
             c.set_frequencies(new_guess_frequencies)
 
-        # B) Completely random mutations (with low probability)
+        # Completely random mutation of each frequency value (with low probability)
         for f in c.get_frequencies():
             if random.random() < 0.01:
-                f['frequency'] = get_random_frequency()
+                f['frequency'] = get_random_frequency(100, 2000)
 
         c.calculate_scores(target, num_windows)
 
