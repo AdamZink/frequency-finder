@@ -64,7 +64,6 @@ while True:
 
     for i in range(len(population)):
         combined_score = population[i].get_composite_score()
-        print('i={}, combined_score={}'.format(i, combined_score))
 
         if lowest_score is None or combined_score < lowest_score:
             best_index = i
