@@ -134,12 +134,12 @@ while True:
     # Mutation of children
     for c in children:
         # Adjust the number of frequencies
-        if c.frequency_count_score > 0 and random.random() < 0.25:
+        if c.frequency_count_score > 0 and random.random() < 0.5:
             append_random_frequencies(
                 c.frequencies,
                 c.frequency_count_score
             )
-        elif c.frequency_count_score < 0 and random.random() < 0.25:
+        elif c.frequency_count_score < 0 and random.random() < 0.5:
             random.shuffle(c.frequencies)
             remove_frequencies(
                 c.frequencies,
