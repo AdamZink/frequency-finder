@@ -174,14 +174,16 @@ while True:
                     subtract_index = random.randint(0, len(eligible_guess_indices) - 1)
                     new_guess_frequencies.append({
                         'type': 'sine',
-                        'frequency': c_frequencies[eligible_guess_indices[subtract_index]]['frequency'] - value
+                        'frequency': c_frequencies[eligible_guess_indices[subtract_index]]['frequency'] - value,
+                        'gain': 1.0
                     })
                     del c_frequencies[eligible_guess_indices[subtract_index]]
                 else:
                     keep_index = random.randint(0, len(c_frequencies) - 1)
                     new_guess_frequencies.append({
                         'type': 'sine',
-                        'frequency': c_frequencies[keep_index]['frequency']
+                        'frequency': c_frequencies[keep_index]['frequency'],
+                        'gain': 1.0
                     })
                     del c_frequencies[keep_index]
 
@@ -190,7 +192,8 @@ while True:
                 add_index = random.randint(0, len(c_frequencies) - 1)
                 new_guess_frequencies.append({
                     'type': 'sine',
-                    'frequency': c_frequencies[add_index]['frequency'] + value
+                    'frequency': c_frequencies[add_index]['frequency'] + value,
+                    'gain': 1.0
                 })
                 del c_frequencies[add_index]
 

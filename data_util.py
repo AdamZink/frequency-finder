@@ -8,9 +8,11 @@ def get_random_frequency(f_min, f_max):
 
 def append_random_frequencies(frequencies, freq_count):
     for _ in range(freq_count):
+        # TODO make the gain a random value between 0 and 1, and then add fitness score to evaluate gain accuracy
         frequencies.append({
                 'type': 'sine',
-                'frequency': get_random_frequency(200, 1000)
+                'frequency': get_random_frequency(200, 1000),
+                'gain': 1.0
         })
 
 
